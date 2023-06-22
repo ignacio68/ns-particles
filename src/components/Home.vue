@@ -1,64 +1,55 @@
 <script lang="ts" setup>
-import {
-  ref,
-  computed,
-  onMounted,
-  onUnmounted,
-  $navigateTo,
-} from 'nativescript-vue';
-import Details from './Details.vue';
+  import { ref, computed, onMounted, onUnmounted, $navigateTo } from "nativescript-vue";
+  import { registerSwiftUI, UIDataDriver, SwiftUI } from "@nativescript/swift-ui";
+  import { TabSelectedEventData } from "@nativescript-community/ui-material-bottomnavigationbar";
 
-const counter = ref(0);
-const message = computed(() => {
-  return `Blank {N}-Vue app: ${counter.value}`;
-});
+  const mode = ref("simple");
+  const modes = ["simple", "flipped"];
+  let swiftUI: SwiftUI;
 
-function logMessage() {
-  console.log('You have tapped the message!');
-}
+  interface ParticlesData {
+    mode: string;
+  }
 
-let interval: any;
-onMounted(() => {
-  console.log('mounted');
-  interval = setInterval(() => counter.value++, 100);
-});
+  const data: ParticlesData = {
+    mode: mode.value
+  };
 
-onUnmounted(() => {
-  console.log('unmounted');
-  clearInterval(interval);
-});
+  onMounted(() => {
+    console.log("onMounted");
+  });
+
+  function onLoaded(args) {
+    swiftUI = args.object;
+    console.log("Swift UI component Loaded", swiftUI);
+  }
+
+  function onBottomNavigationTabSelected(args: TabSelectedEventData) {
+    mode.value = modes[args.newIndex];
+    console.log("selected: ", mode.value);
+    swiftUI.updateData({ mode: mode.value });
+  }
+
+  declare const ParticlesViewProvider: any;
+  registerSwiftUI("particlesView", (view) => new UIDataDriver(ParticlesViewProvider.alloc().init(), view));
 </script>
 
 <template>
   <Frame>
     <Page>
       <ActionBar>
-        <Label text="Home" class="font-bold text-lg" />
+        <Label text="Particles" class="font-bold text-lg" />
       </ActionBar>
 
-      <GridLayout rows="*, auto, auto, *" class="px-4">
-        <Label
-          row="1"
-          class="text-xl align-middle text-center text-gray-500"
-          :text="message"
-          @tap="logMessage"
-        />
-
-        <Button
-          row="2"
-          @tap="$navigateTo(Details)"
-          class="mt-4 px-4 py-2 bg-white border-2 border-blue-400 rounded-lg"
-          horizontalAlignment="center"
-        >
-          View Details
-        </Button>
+      <GridLayout rows="*, auto" class="container">
+        <SwiftUI row="0" width="100%" height="100%" swiftId="particlesView" :data="data" @loaded="onLoaded" />
+        <MDBottomNavigationBar row="1" activeColor="blue" inactiveColor="white" backgroundColor="black" selectedTabIndex="0" @tabSelected="onBottomNavigationTabSelected">
+          <MDBottomNavigationTab title="SIMPLE" icon="" />
+          <MDBottomNavigationTab title="FLIPPED" icon="" />
+        </MDBottomNavigationBar>
       </GridLayout>
     </Page>
   </Frame>
 </template>
 
-<style>
-/* .info {
-    font-size: 20;
-  } */
-</style>
+<style scoped lang="scss"></style>
